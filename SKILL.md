@@ -35,12 +35,12 @@ fetch_fed_csv → load_dkw ─┐
 fetch_bbg ───────────────┘
 ```
 
-一条命令跑完（**必须用全路径 Python，且所有路径都写 Windows 风格**，见"环境"）：
+一条命令跑完（路径用 Windows 风格，见"环境"）：
 
 ```bash
-SW="C:/Users/ey/.workbuddy/skills/dkw-tips-monitor"
-PY="/c/Users/ey/AppData/Local/Programs/Python/Python312/python.exe"
-"$PY" "$SW/scripts/run.py" --outdir "C:/Users/<workspace>/dkw_out"
+SW="$HOME/.workbuddy/skills/dkw-tips-monitor"   # 改成你的 skill 实际目录
+PY="${DKW_PY:-$(command -v python3 || command -v py || command -v python)}"
+"$PY" "$SW/scripts/run.py" --outdir "$HOME/dkw_out"
 ```
 
 从任意工作目录调用都可以（脚本自己处理 `sys.path`）。首次运行会自动下载两个数据源
@@ -145,18 +145,20 @@ component_t    = anchor + γ · Σ_{s≤t} d(component)_s     anchor = Fed 最�
 
 **信号判定**：比较各渠道的**绝对值大小**，不是占净变动的比例（净变动接近 0 时占比会爆掉）。残差为最大单项 → "模型残差主导"；预期通胀为最大单项 → "预期驱动"；溢价渠道为最大项 → "情绪/溢价驱动"（若同时风险因子周变动 > 0.5σ 更明确）。
 
-## 环境（Windows 硬约束）
+## 环境（Windows 注意事项）
 
 ```bash
-export PATH="/c/Users/ey/.workbuddy/binaries/PortableGit/versions/1.2.0/usr/bin:/c/Users/ey/.workbuddy/binaries/PortableGit/versions/1.2.0/mingw64/bin:/c/Program Files/Git/cmd:$PATH"
-PY="/c/Users/ey/AppData/Local/Programs/Python/Python312/python.exe"
+# Python 解释器：默认按 python3 → py(Windows 启动器) → python 顺序探测。
+# 若你的 `python` 指向 Microsoft Store 占位程序，设 DKW_PY 指向真实解释器即可：
+#   export DKW_PY="C:/Path/To/Python312/python.exe"
+PY="${DKW_PY:-$(command -v python3 || command -v py || command -v python)}"
 ```
 
-- **必须用系统 Python 3.12 全路径**：`C:\Users\ey\AppData\Local\Programs\Python\Python312\python.exe`。
-  该环境有 `blpapi 3.26.5.1` + `pandas 3.0.5` + `numpy 2.5.1` + `scipy`；受管 Python 3.13 **没有 blpapi**。
+- **Python 需装好 `blpapi 3.26.5.1` + `pandas` + `numpy` + `scipy`**。Windows 上若 `python` 命令被 Microsoft Store 占位程序劫持，
+  用 `py` 启动器（`py scripts/run.py`）或设置 `DKW_PY` 环境变量指向真实解释器全路径；不要在脚本里用裸 `python`。
 - Bloomberg 需要 `bbcomm.exe` 在跑（终端已登录）。会话起不来就加 `--no-bbg`。
-- **`--outdir` 与脚本路径都必须传 Windows 风格路径**（`C:/...`）。传 git-bash 的 `/c/...` 会被 Python 解释成当前盘根：
-  当 `--outdir` 时会在 `C:\c\Users\...` 造出孤儿目录，当脚本路径时直接 `No such file or directory`。两条都实际踩过。
+- **`--outdir` 与脚本路径都建议传 Windows 风格路径**（`C:/...`）。若用 git-bash 的 `/c/...` 形式，
+  会被 Python 解释成当前盘根（`C:\c\Users\...` 孤儿目录 / `No such file or directory`）。两条都实际踩过。
 
 ### 单模块自检
 
@@ -214,5 +216,5 @@ README 中的表格若在单元格里写含竖线的表达式（如 `|d_bp|`）�
 
 ## 依赖
 
-`pandas` / `numpy`（系统 Python 3.12 已装）、`blpapi`（Bloomberg）。无 `tabulate` 依赖
+`pandas` / `numpy`（需 Python 3.12+）、`blpapi`（Bloomberg）。无 `tabulate` 依赖
 （表格渲染自带）。网络通过 `urllib`（stdlib）取 Fed CSV。
